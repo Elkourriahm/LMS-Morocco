@@ -2,6 +2,8 @@
 
 SaaS multi-établissement (écoles privées et centres de soutien marocains). Stack : Next.js App Router, TypeScript strict, Supabase, Tailwind CSS 4. Lire les ADR de `docs/adr` avant de modifier une décision structurante.
 
+État du projet, feuille de route, historique des sessions et points ouverts : @docs/contexte.md. Le mettre à jour à la fin de chaque session (historique, statut des stories, points ouverts).
+
 ## Structure
 
 - `src/app` : routes, layouts, styles globaux. Pas de logique métier ici.
