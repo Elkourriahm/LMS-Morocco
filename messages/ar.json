@@ -1,0 +1,18 @@
+{
+  "Metadata": {
+    "description": "منصة تطبيقية للمؤسسات التعليمية في المغرب."
+  },
+  "HomePage": {
+    "tagline": "أساس التطبيق جاهز.",
+    "examplesTitle": "أمثلة على التنسيق",
+    "dateLabel": "التاريخ",
+    "amountLabel": "المبلغ"
+  },
+  "LanguageSwitcher": {
+    "label": "اللغة",
+    "locales": {
+      "fr": "Français",
+      "ar": "العربية"
+    }
+  }
+}
