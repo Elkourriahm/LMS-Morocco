@@ -14,6 +14,33 @@ const physicalToLogical = [
   ['pr', 'pe'],
   ['left', 'start'],
   ['right', 'end'],
+  ['scroll-ml', 'scroll-ms'],
+  ['scroll-mr', 'scroll-me'],
+  ['scroll-pl', 'scroll-ps'],
+  ['scroll-pr', 'scroll-pe'],
+];
+
+// Classes sans valeur négative et dont la forme nue existe ("border-l",
+// "rounded-l") : le suffixe "-…" est facultatif.
+const physicalToLogicalBare = [
+  ['border-l', 'border-s'],
+  ['border-r', 'border-e'],
+  ['rounded-l', 'rounded-s'],
+  ['rounded-r', 'rounded-e'],
+  ['rounded-tl', 'rounded-ss'],
+  ['rounded-tr', 'rounded-se'],
+  ['rounded-bl', 'rounded-es'],
+  ['rounded-br', 'rounded-ee'],
+];
+
+// Classes à valeur fixe.
+const physicalToLogicalExact = [
+  ['text-left', 'text-start'],
+  ['text-right', 'text-end'],
+  ['float-left', 'float-start'],
+  ['float-right', 'float-end'],
+  ['clear-left', 'clear-start'],
+  ['clear-right', 'clear-end'],
 ];
 
 const rtlRestrictions = [
@@ -22,13 +49,15 @@ const rtlRestrictions = [
     fix: `$1${logical}-$2`,
     message: `Classe physique "${physical}-*" interdite (RTL) : utiliser "${logical}-*".`,
   })),
-  ...[
-    ['left', 'start'],
-    ['right', 'end'],
-  ].map(([physical, logical]) => ({
-    pattern: `^((?:[^:]+:)*!?)text-${physical}(!?)$`,
-    fix: `$1text-${logical}$2`,
-    message: `Classe physique "text-${physical}" interdite (RTL) : utiliser "text-${logical}".`,
+  ...physicalToLogicalBare.map(([physical, logical]) => ({
+    pattern: `^((?:[^:]+:)*!?)${physical}((?:-.+)?!?)$`,
+    fix: `$1${logical}$2`,
+    message: `Classe physique "${physical}-*" interdite (RTL) : utiliser "${logical}-*".`,
+  })),
+  ...physicalToLogicalExact.map(([physical, logical]) => ({
+    pattern: `^((?:[^:]+:)*!?)${physical}(!?)$`,
+    fix: `$1${logical}$2`,
+    message: `Classe physique "${physical}" interdite (RTL) : utiliser "${logical}".`,
   })),
 ];
 
