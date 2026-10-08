@@ -1,2 +1,6 @@
 allowBuilds:
   unrs-resolver: true
+  # Dépendances de l'extracteur de messages de next-intl (non utilisé) :
+  # leurs binaires précompilés suffisent, aucun script d'installation requis.
+  '@parcel/watcher': false
+  '@swc/core': false
