@@ -1,0 +1,18 @@
+{
+  "Metadata": {
+    "description": "Socle applicatif pour les établissements scolaires au Maroc."
+  },
+  "HomePage": {
+    "tagline": "Le socle de l’application est prêt.",
+    "examplesTitle": "Exemples de formatage",
+    "dateLabel": "Date",
+    "amountLabel": "Montant"
+  },
+  "LanguageSwitcher": {
+    "label": "Langue",
+    "locales": {
+      "fr": "Français",
+      "ar": "العربية"
+    }
+  }
+}
