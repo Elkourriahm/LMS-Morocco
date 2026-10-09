@@ -12,7 +12,9 @@ SaaS multi-établissement (écoles privées et centres de soutien marocains). St
 - `messages/fr.json`, `messages/ar.json` : textes de l'interface. `src/proxy.ts` : redirection de `/` selon la langue (ex-middleware, Next.js 16).
 - `src/components/ui` : composants d'interface génériques.
 - `src/env.ts` : seul point d'accès aux variables d'environnement (validées par zod). Ne pas lire `process.env` ailleurs.
-- `supabase/migrations` : migrations SQL.
+- `supabase/migrations` : migrations SQL ; `supabase/rollbacks` : leur retour arrière (`<horodatage>_<nom>.down.sql`) ; `supabase/tests` : tests pgTAP. `supabase/config.toml` : Supabase local (ADR 0006).
+- `src/lib/supabase` : clients typés (`client.ts` navigateur, `server.ts` serveur avec session, `admin.ts` service_role) et `database.types.ts` (généré, ne pas modifier à la main).
+- `scripts` : scripts Node du dépôt (`*.mts`, exécutés sans compilation).
 - `docs/adr` : fiches de décision. `e2e` : tests Playwright. Tests unitaires à côté du code (`*.test.ts`).
 
 ## Commandes (pnpm uniquement, jamais npm ni yarn)
@@ -20,19 +22,21 @@ SaaS multi-établissement (écoles privées et centres de soutien marocains). St
 - `pnpm install`, `pnpm dev`, `pnpm build`
 - `pnpm lint` : `pnpm i18n:check` (parité des clés FR/AR, valeurs non vides), ESLint (dont la règle RTL) puis `prettier --check`. `pnpm exec eslint --fix .` corrige les classes RTL ; `pnpm format` reformate.
 - `pnpm typecheck` : `next typegen` puis `tsc --noEmit`
-- `pnpm test` (Vitest), `pnpm test:e2e` (Playwright)
-- Avant de rendre la main : `pnpm lint && pnpm typecheck && pnpm test && pnpm build`. La CI (`.github/workflows/ci.yml`) exécute les mêmes commandes.
+- `pnpm test` (Vitest), `pnpm test:e2e` (Playwright). `pnpm build` lance ensuite `check:bundle` (clé service_role absente de `.next/static`).
+- Base locale (Docker requis) : `pnpm db:start`, `db:stop`, `db:reset`, `db:new <nom>` (migration + rollback), `db:types`, `db:test` (pgTAP), `db:rollback-check`. `pnpm lint` lance aussi `db:check-rollbacks`.
+- Avant de rendre la main : `pnpm lint && pnpm typecheck && pnpm test && pnpm build`, et si `supabase/` a changé : `pnpm db:rollback-check && pnpm db:test && pnpm db:types`. La CI (`.github/workflows/ci.yml`) exécute les mêmes commandes.
 
 ## Règles
 
 - **TypeScript strict** avec `noUncheckedIndexedAccess` : pas de `any`, pas de `!` pour contourner un accès indexé.
 - **RTL** : classes Tailwind logiques uniquement : `ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`, `text-end`, `border-s`, `border-e`, `rounded-s`, `rounded-e`, `rounded-ss`, `rounded-se`, `rounded-es`, `rounded-ee`, `float-start`, `float-end`, `clear-start`, `clear-end`, `scroll-ms`, `scroll-me`, `scroll-ps`, `scroll-pe`. Leurs équivalents physiques (`ml-`, `left-`, `text-left`, `border-l`, `rounded-tl`, `float-left`, `scroll-ml`…) sont refusés par ESLint dans les `className` et les appels `cn`/`clsx` ; non vérifié dans les `@apply` CSS ni les classes construites dynamiquement, à éviter.
-- **Multi-établissement** : toute table métier porte `school_id` (non nul, avec clé étrangère) et une politique RLS Postgres qui isole par établissement. Le filtrage dans le code ne remplace jamais la RLS. Chaque migration qui crée une table active la RLS dans la même migration.
-- **Migrations réversibles** : chaque migration s'accompagne de son retour arrière documenté et testé. Ne jamais modifier une migration déjà appliquée : en ajouter une nouvelle.
+- **Multi-établissement** : toute table métier porte `school_id` (non nul, avec clé étrangère) et une politique RLS Postgres qui isole par établissement. Le filtrage dans le code ne remplace jamais la RLS. Chaque migration qui crée une table active la RLS dans la même migration, et la table a son fichier pgTAP qui teste l'isolation entre deux établissements (modèle : `supabase/tests/app_private_privileges.test.sql`).
+- **Migrations réversibles** (ADR 0006) : créer avec `pnpm db:new <nom>` ; toute migration a son rollback dans `supabase/rollbacks`, qui l'annule exactement (vérifié par `db:rollback-check`). Ne jamais modifier une migration déjà appliquée ou poussée : en ajouter une nouvelle. Après chaque migration, régénérer les types (`pnpm db:types`) et les commiter.
+- **service_role** : `@/lib/supabase/admin` contourne la RLS. Réservé aux tâches système (cron, webhooks : `src/app/api/cron`, `src/app/api/webhooks`, `src/features/*/jobs`) ; jamais dans le chemin d'une requête utilisateur (page, composant, Server Action), qui utilise `@/lib/supabase/server`. Toute fonction de `app_private` révoque EXECUTE à `public, anon, authenticated`.
 - **Secrets** : aucun secret, clé, URL réelle ou donnée personnelle en dur. Nouvelle variable = schéma dans `src/env.ts` + entrée commentée dans `.env.example`. Les variables `NEXT_PUBLIC_*` sont publiques : jamais de secret dedans.
 - **Données réelles** : aucune donnée réelle d'enfant avant l'autorisation CNDP et le consentement des parents (ADR 0003). Données fictives uniquement.
 - **Traductions** (ADR 0005) : tout texte visible passe par `messages/fr.json` et `messages/ar.json` (`useTranslations` / `getTranslations` de next-intl) ; aucun texte en dur dans les composants, y compris `aria-label`, `title`, `alt` et métadonnées. Ajouter chaque clé dans les deux fichiers. Interface en FR et AR seulement, pas de darija. Liens internes via `Link` de `@/lib/i18n/navigation`, pas `next/link`.
-- **Formatage** : dates, nombres et montants (MAD) uniquement via `src/lib/i18n/format.ts` (chiffres latins en arabe, fuseau `Africa/Casablanca`). Pas de `toLocaleString` ni de `Intl` direct ailleurs.
+- **Formatage** : dates, nombres et montants (MAD) uniquement via `src/lib/i18n/format.ts` (chiffres latins en arabe, fuseau `Africa/Casablanca`). Pas de `toLocaleString` ni de `Intl` direct ailleurs. Formater côté serveur de préférence (Server Components) : le résultat d'Intl varie selon le navigateur.
 - **Déploiement** : cible Cloudflare Workers via OpenNext (ADR 0004). Vérifier la compatibilité de toute fonctionnalité Next.js ou API Node utilisée.
 - **Dépendances** : versions exactes (`pnpm add -E`). Ne pas contourner la politique de délai minimal de publication de pnpm (`minimumReleaseAgeExclude`) sans le signaler.
 
