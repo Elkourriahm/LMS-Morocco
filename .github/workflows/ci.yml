@@ -25,9 +25,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Valeurs locales par défaut de Supabase (aucun secret réel), requises par src/env.ts.
+      - run: cp .env.example .env.local
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      # Inclut le contrôle d'absence de la clé service_role dans .next/static.
       - run: pnpm build
 
   e2e:
@@ -42,5 +45,33 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Valeurs locales par défaut de Supabase (aucun secret réel), requises par src/env.ts.
+      - run: cp .env.example .env.local
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+
+  db:
+    name: Base de données (migrations, rollbacks, pgTAP, types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Postgres, auth (schéma auth pour les futurs tests RLS), PostgREST et
+      # postgres-meta (génération des types) suffisent.
+      - run: pnpm exec supabase start -x realtime,storage-api,imgproxy,mailpit,studio,edge-runtime,logflare,vector,supavisor
+      - run: pnpm db:rollback-check
+      - run: pnpm db:test
+      - name: Types à jour avec les migrations
+        run: |
+          pnpm db:types
+          git diff --exit-code -- src/lib/supabase/database.types.ts || {
+            echo "::error::database.types.ts n'est pas à jour : lancer pnpm db:types et commiter."
+            exit 1
+          }
+      - if: always()
+        run: pnpm exec supabase stop --no-backup
