@@ -74,6 +74,32 @@ export default defineConfig([
       ],
     },
   },
+  // Le client service_role contourne la RLS (ADR 0006) : importable seulement
+  // depuis les tâches système (cron, webhooks, jobs), jamais depuis une page,
+  // un composant ou une Server Action servant un utilisateur.
+  {
+    files: ['src/**/*.{ts,tsx,mts}'],
+    ignores: [
+      'src/lib/supabase/admin.ts',
+      'src/app/api/cron/**',
+      'src/app/api/webhooks/**',
+      'src/features/*/jobs/**',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/lib/supabase/admin', '**/supabase/admin'],
+              message:
+                'Client service_role réservé aux tâches système (src/app/api/cron, src/app/api/webhooks, src/features/*/jobs). Utiliser @/lib/supabase/server.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     '.next/**',
     'out/**',
