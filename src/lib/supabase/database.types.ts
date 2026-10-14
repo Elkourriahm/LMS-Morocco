@@ -36,7 +36,95 @@ export type Database = {
   };
   public: {
     Tables: {
-      [_ in never]: never;
+      memberships: {
+        Row: {
+          created_at: string;
+          id: string;
+          role: Database['public']['Enums']['app_role'];
+          school_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          role: Database['public']['Enums']['app_role'];
+          school_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          role?: Database['public']['Enums']['app_role'];
+          school_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'memberships_school_id_fkey';
+            columns: ['school_id'];
+            isOneToOne: false;
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      profiles: {
+        Row: {
+          created_at: string;
+          full_name: string;
+          id: string;
+          preferred_locale: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          full_name?: string;
+          id: string;
+          preferred_locale?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          full_name?: string;
+          id?: string;
+          preferred_locale?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      schools: {
+        Row: {
+          created_at: string;
+          default_locale: string;
+          id: string;
+          name: string;
+          timezone: string;
+          type: Database['public']['Enums']['school_type'];
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          default_locale?: string;
+          id?: string;
+          name: string;
+          timezone?: string;
+          type: Database['public']['Enums']['school_type'];
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          default_locale?: string;
+          id?: string;
+          name?: string;
+          timezone?: string;
+          type?: Database['public']['Enums']['school_type'];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -45,7 +133,8 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      app_role: 'direction' | 'caisse' | 'enseignant' | 'parent';
+      school_type: 'ecole' | 'centre';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -175,6 +264,9 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ['direction', 'caisse', 'enseignant', 'parent'],
+      school_type: ['ecole', 'centre'],
+    },
   },
 } as const;
