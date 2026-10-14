@@ -1,0 +1,55 @@
+-- Jeu de données fictif pour les tests d'isolation (ADR 0007), inclus après
+-- helpers/auth.psql. Créé en tant que postgres (contourne la RLS), annulé
+-- avec la transaction du test.
+--
+--   Établissement A (école)  : dir_a (direction), caisse_a, ens_a (enseignant),
+--                              parent_a, u_a (direction ET caisse)
+--   Établissement B (centre) : dir_b (direction)
+--
+-- tests.id('<nom>') renvoie l'uuid d'un établissement ou d'un utilisateur ;
+-- utilisable dans les requêtes passées en chaîne à pgTAP.
+
+create table tests.fixtures (name text primary key, id uuid not null unique);
+grant select on tests.fixtures to anon, authenticated;
+
+insert into tests.fixtures (name, id) values
+  ('school_a', '0000000a-0000-4000-8000-000000000000'),
+  ('school_b', '0000000b-0000-4000-8000-000000000000'),
+  ('dir_a',    '0000000a-0000-4000-8000-000000000001'),
+  ('caisse_a', '0000000a-0000-4000-8000-000000000002'),
+  ('ens_a',    '0000000a-0000-4000-8000-000000000003'),
+  ('parent_a', '0000000a-0000-4000-8000-000000000004'),
+  ('u_a',      '0000000a-0000-4000-8000-000000000005'),
+  ('dir_b',    '0000000b-0000-4000-8000-000000000001');
+
+create function tests.id(p_name text)
+returns uuid
+language sql
+stable
+as $$
+  select f.id from tests.fixtures f where f.name = p_name;
+$$;
+grant execute on function tests.id(text) to anon, authenticated;
+
+insert into public.schools (id, name, type) values
+  (tests.id('school_a'), 'École fictive A', 'ecole'),
+  (tests.id('school_b'), 'Centre fictif B', 'centre');
+
+-- DO : pas de sortie parasite dans le flux TAP.
+do $$
+begin
+  perform tests.create_user(f.id, f.name || '@example.test',
+                            jsonb_build_object('full_name', 'Fictif ' || f.name))
+  from tests.fixtures f
+  where f.name not like 'school_%';
+end;
+$$;
+
+insert into public.memberships (school_id, user_id, role) values
+  (tests.id('school_a'), tests.id('dir_a'),    'direction'),
+  (tests.id('school_a'), tests.id('caisse_a'), 'caisse'),
+  (tests.id('school_a'), tests.id('ens_a'),    'enseignant'),
+  (tests.id('school_a'), tests.id('parent_a'), 'parent'),
+  (tests.id('school_a'), tests.id('u_a'),      'direction'),
+  (tests.id('school_a'), tests.id('u_a'),      'caisse'),
+  (tests.id('school_b'), tests.id('dir_b'),    'direction');
