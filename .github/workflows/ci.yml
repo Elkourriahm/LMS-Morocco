@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  # push limité à main : sur une branche avec PR, pull_request suffit (sinon
+  # chaque job tourne deux fois).
   push:
+    branches: [main]
   pull_request:
 
 permissions:
