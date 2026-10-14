@@ -69,8 +69,17 @@ select is_empty(
     cross join (values ('anon'), ('authenticated')) as r (rolname)
     where n.nspname = 'app_private'
       and has_function_privilege(r.rolname, p.oid, 'EXECUTE')
+      -- Aides RLS, accordées explicitement à authenticated (ADR 0007).
+      -- Toute nouvelle entrée de cette liste se justifie dans sa migration.
+      and not (
+        r.rolname = 'authenticated'
+        and p.oid in (
+          'app_private.user_school_ids()'::regprocedure,
+          'app_private.has_role(uuid, public.app_role[])'::regprocedure
+        )
+      )
   $$,
-  'anon et authenticated ne peuvent exécuter aucune fonction de app_private'
+  'anon ne peut exécuter aucune fonction de app_private ; authenticated seulement les aides RLS listées'
 );
 
 -- 3. Droits par défaut : aucun défaut propre au schéma ne profite à PUBLIC,
