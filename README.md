@@ -60,7 +60,7 @@ Variables d'environnement : voir `.env.example`, à copier vers `.env.local` (ob
 
 Avant le premier `pnpm test:e2e` : `pnpm exec playwright install chromium`.
 
-La CI GitHub Actions (`.github/workflows/ci.yml`) exécute à chaque push et pull request : install, lint, typecheck, test, build ; les tests e2e dans un job séparé ; et un job `db` (Supabase local, `db:rollback-check`, `db:test`, types à jour).
+La CI GitHub Actions (`.github/workflows/ci.yml`) exécute à chaque push sur `main` et à chaque pull request : install, lint, typecheck, test, build ; les tests e2e dans un job séparé ; et un job `db` (Supabase local, `db:rollback-check`, `db:test`, types à jour).
 
 ## Structure
 
