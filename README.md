@@ -2,7 +2,7 @@
 
 Socle technique d'un SaaS multi-établissement pour les écoles privées et les centres de soutien marocains : vie scolaire, paiements avec relances, communication WhatsApp traduite (FR/AR/darija). Interfaces en français et en arabe (RTL) ; PWA pour les parents, application web pour la direction.
 
-État actuel : socle et internationalisation FR/AR (RTL). La page d'accueil est un placeholder traduit ; Supabase local avec migrations réversibles et tests pgTAP, sans aucune table métier ; ni fonctionnalité métier, ni authentification.
+État actuel : socle et internationalisation FR/AR (RTL). La page d'accueil est un placeholder traduit ; Supabase local avec migrations réversibles et tests pgTAP ; modèle multi-établissement (établissements, profils, appartenances avec rôles) isolé par RLS. Ni écran métier, ni authentification côté application.
 
 ## Prérequis
 
@@ -102,4 +102,6 @@ Le détail est dans [CLAUDE.md](CLAUDE.md).
 - [0003 : hébergement des données et CNDP](docs/adr/0003-hebergement-donnees.md)
 - [0004 : hébergement du frontend](docs/adr/0004-hebergement-front.md)
 - [0005 : internationalisation](docs/adr/0005-i18n.md)
+- [0006 : base de données locale, migrations réversibles et tests SQL](docs/adr/0006-base-de-donnees.md)
+- [0007 : tenancy, rôles et RLS](docs/adr/0007-tenancy-et-roles.md)
 - [0006 : base de données locale, migrations réversibles, tests SQL](docs/adr/0006-base-de-donnees.md)
