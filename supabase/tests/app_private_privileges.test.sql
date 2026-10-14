@@ -1,4 +1,6 @@
--- Droits sur le schéma app_private : anon et authenticated n'ont aucun accès.
+-- Droits sur le schéma app_private (ADR 0006) : non exposé par l'API, aucun
+-- droit pour anon, USAGE seul pour authenticated, aucune fonction ni table
+-- accessible par défaut.
 -- Lancé par `pnpm db:test` (pgTAP, ADR 0006). Chaque fichier est exécuté
 -- dans une transaction annulée à la fin : aucun effet sur la base.
 --
@@ -29,25 +31,22 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(17);
 
 select has_schema('app_private', 'le schéma app_private existe');
 
--- 1. Aucun droit sur le schéma lui-même (USAGE, CREATE), y compris hérité de
+-- 1. Droits sur le schéma lui-même (USAGE, CREATE), y compris hérités de
 --    PUBLIC.
 select schema_privs_are(
   'app_private', 'anon', array[]::text[],
   'anon n''a aucun droit sur le schéma app_private'
 );
 select schema_privs_are(
-  'app_private', 'authenticated', array[]::text[],
-  'authenticated n''a aucun droit sur le schéma app_private'
+  'app_private', 'authenticated', array['USAGE'],
+  'authenticated a USAGE sur app_private, et rien d''autre'
 );
 
--- 2. Aucun droit sur les objets du schéma. Vides aujourd'hui, ces requêtes
---    protègent les futures fonctions : chacune doit révoquer explicitement
---    EXECUTE à PUBLIC, anon et authenticated, car PostgreSQL accorde EXECUTE
---    à PUBLIC par défaut, quel que soit le schéma.
+-- 2. Objets existants : aucune table, séquence ni fonction accessible.
 select is_empty(
   $$
     select c.relname, r.rolname
@@ -74,8 +73,9 @@ select is_empty(
   'anon et authenticated ne peuvent exécuter aucune fonction de app_private'
 );
 
--- 3. Aucun droit par défaut propre au schéma qui profiterait à PUBLIC, anon
---    ou authenticated sur les objets créés plus tard.
+-- 3. Droits par défaut : aucun défaut propre au schéma ne profite à PUBLIC,
+--    anon ou authenticated, et le défaut global de postgres ne donne plus
+--    EXECUTE à PUBLIC sur les fonctions.
 select is_empty(
   $$
     select d.defaclrole::regrole, d.defaclobjtype, a.privilege_type
@@ -90,10 +90,57 @@ select is_empty(
   $$,
   'aucun droit par défaut de app_private pour PUBLIC, anon ou authenticated'
 );
+select is(
+  (
+    select count(*)::int
+    from pg_default_acl d
+    cross join lateral aclexplode(d.defaclacl) a
+    where d.defaclrole = 'postgres'::regrole
+      and d.defaclnamespace = 0
+      and d.defaclobjtype = 'f'
+      and a.grantee = 0
+  ),
+  0,
+  'le défaut global de postgres n''accorde pas EXECUTE à PUBLIC'
+);
+select isnt(
+  (
+    select d.defaclacl
+    from pg_default_acl d
+    where d.defaclrole = 'postgres'::regrole
+      and d.defaclnamespace = 0
+      and d.defaclobjtype = 'f'
+  ),
+  null,
+  'le défaut intégré de PostgreSQL (EXECUTE à PUBLIC) est remplacé pour postgres'
+);
 
--- 4. Vérification par l'usage : ni anon ni authenticated ne peuvent créer un
---    objet dans le schéma.
+-- 4. Objets créés après coup, comme le fera une migration (rôle postgres),
+--    sans aucun GRANT ni REVOKE explicite : ni anon ni authenticated n'y ont
+--    accès.
+create function app_private.test_aide() returns int
+  language sql stable as $f$ select 1 $f$;
+create table app_private.test_table (id int);
+
+select ok(
+  not has_function_privilege('anon', 'app_private.test_aide()', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'app_private.test_aide()', 'EXECUTE'),
+  'une nouvelle fonction de app_private n''est exécutable ni par anon ni par authenticated'
+);
+select ok(
+  not has_table_privilege('anon', 'app_private.test_table', 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
+  and not has_table_privilege('authenticated', 'app_private.test_table', 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'),
+  'une nouvelle table de app_private n''est accessible ni à anon ni à authenticated'
+);
+
+-- 5. Vérification par l'usage.
 set local role anon;
+select throws_ok(
+  'select app_private.test_aide()',
+  '42501',
+  null,
+  'anon ne peut pas appeler une fonction de app_private'
+);
 select throws_ok(
   'create table app_private.intrusion (id int)',
   '42501',
@@ -104,12 +151,47 @@ reset role;
 
 set local role authenticated;
 select throws_ok(
+  'select app_private.test_aide()',
+  '42501',
+  null,
+  'authenticated ne peut pas appeler une fonction de app_private sans GRANT explicite'
+);
+select throws_ok(
+  'select * from app_private.test_table',
+  '42501',
+  null,
+  'authenticated ne peut pas lire une table de app_private'
+);
+select throws_ok(
   'create function app_private.intrusion() returns int language sql as $f$ select 1 $f$',
   '42501',
   null,
   'authenticated ne peut pas créer de fonction dans app_private'
 );
 reset role;
+
+-- Un GRANT explicite, fonction par fonction, suffit (modèle des aides RLS en
+-- S1) : USAGE sur le schéma est déjà accordé.
+grant execute on function app_private.test_aide() to authenticated;
+set local role authenticated;
+select is(app_private.test_aide(), 1, 'un GRANT EXECUTE explicite rend la fonction appelable par authenticated');
+reset role;
+
+-- 6. Schéma non exposé par l'API. La liste des schémas exposés est passée à
+--    PostgREST par supabase/config.toml ([api].schemas, vérifié par
+--    scripts/lib/supabase-config.test.ts) ; elle peut aussi l'être en base, par
+--    le réglage pgrst.db_schemas du rôle authenticator. Ce réglage ne doit pas
+--    citer app_private.
+select is_empty(
+  $$
+    select s.setconfig
+    from pg_db_role_setting s
+    cross join lateral unnest(s.setconfig) as c (setting)
+    where c.setting like 'pgrst.db_schemas=%'
+      and c.setting like '%app_private%'
+  $$,
+  'app_private n''est pas dans pgrst.db_schemas'
+);
 
 select * from finish();
 
