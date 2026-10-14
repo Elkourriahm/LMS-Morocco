@@ -1,8 +1,8 @@
 # Contexte du projet
 
-Fichier de reprise entre sessions. Chargé automatiquement via `CLAUDE.md`. **À mettre à jour en fin de chaque session** : ligne dans l'historique, statut des stories, points ouverts.
+Fichier d'état d'avancement du projet, chargé automatiquement via `CLAUDE.md`. **À la fin de chaque session**, le mettre à jour (fait, en cours, prochaine étape, points ouverts, ligne d'historique) dans le dernier commit. **Au début de chaque session**, le lire avec `git status` et `git log`.
 
-Dernière mise à jour : 2026-10-14, après la reprise de S0-c.
+Dernière mise à jour : 2026-10-14, fin de S0.
 
 ## Produit
 
@@ -16,9 +16,15 @@ Utilisateurs : direction et caisse sur le web, enseignants, parents sur mobile (
 
 Porteur : Ahmed, seul développeur, qui travaille par sessions Claude Code numérotées (S0-a, S0-b…), chacune avec user story, critères d'acceptation, périmètre strict et compte rendu. Le planning de référence (capacité, backlog, sprints, démarches) est le fichier local `Planning_MVP_SaaS_ecoles.xlsx`, hors dépôt. Sprint 1 : à partir du mardi 6 octobre 2026, sprints de deux semaines.
 
-## État actuel
+## Avancement
 
-Socle technique (S0-a), i18n FR/AR avec RTL (S0-b, PR #1) et Supabase local avec migrations réversibles et pgTAP (S0-c, branche `feat/s0c-supabase`, PR empilée sur `feat/s0b-i18n`) terminés. Aucune table ni fonctionnalité métier, pas d'auth ni de déploiement, pas de projet Supabase distant. Remote GitHub : `Elkourriahm/LMS-Morocco` (`main` poussé).
+- **Fait** : S0 terminé. S0-a socle technique ; S0-b i18n FR/AR avec RTL (PR #1, fusionnée dans `main` le 2026-10-14) ; S0-c Supabase local, migrations réversibles, pgTAP, modèle `app_private` (PR #2, rebasée sur `main`). CI au vert sur la PR #2 pour les 3 jobs (`verify`, `e2e`, `db`).
+- **En cours** : fusion de la PR #2 (`feat/s0c-supabase` → `main`).
+- **Prochaine étape** : S1-a, tenancy (table `schools`, rattachement des utilisateurs), rôles (direction, caisse, enseignant, parent) et RLS d'isolation par établissement, avec tests pgTAP et aides RLS dans `app_private` (ADR 0006). À partir de `main` une fois la PR #2 fusionnée.
+
+## État technique
+
+Aucune table ni fonctionnalité métier, pas d'auth ni de déploiement, pas de projet Supabase distant. Remote GitHub : `Elkourriahm/LMS-Morocco`. CI : `push` sur `main` et toute `pull_request`.
 
 | Élément    | Version / choix                                                                                                  |
 | ---------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -39,25 +45,25 @@ Socle technique (S0-a), i18n FR/AR avec RTL (S0-b, PR #1) et Supabase local avec
 
 Jalon 1, pilote dans un centre de soutien (sprints 1 à 5) :
 
-| ID  | Story                                                                             | Sprint | Statut                                                             |
-| --- | --------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------ |
-| S0  | Initialisation : socle, CI, lint, i18n FR/AR avec RTL, fiches de décision         | 1      | Fait (S0-a socle, S0-b i18n, S0-c base de données), PR à fusionner |
-| S1  | Multi-établissement, auth, rôles (direction, caisse, enseignant, parent), RLS     | 1      | À faire                                                            |
-| S2  | Élèves, tuteurs, groupes/classes, inscriptions, import CSV                        | 1      | À faire                                                            |
-| S3  | Absences : saisie enseignant, vue direction                                       | 2      | À faire                                                            |
-| S4  | Notes simples : évaluations, saisie, consultation                                 | 2      | À faire                                                            |
-| S5  | Plans tarifaires (mensuel, par matière, annuel) et génération des échéances       | 2      | À faire                                                            |
-| S6  | Encaissement espèces : reçus numérotés, annulation motivée, clôture de caisse     | 3      | À faire                                                            |
-| S7  | Espace parent PWA : absences, notes, solde, reçus                                 | 3      | À faire                                                            |
-| S8  | WhatsApp Cloud API : templates, webhooks, statuts, opt-in, coût par établissement | 4      | À faire                                                            |
-| S9  | Relances : règles J-3, J+1, J+7, langue du parent, arrêt dès le paiement          | 4      | À faire                                                            |
-| S10 | Traduction FR/AR/darija des messages, validée par un humain avant envoi           | 5      | À faire                                                            |
-| S11 | Consentement des parents (CNDP), journal d'accès, mentions                        | 5      | À faire                                                            |
-| S12 | Mise en production, sauvegardes, monitoring, import des données du pilote         | 5      | À faire                                                            |
+| ID  | Story                                                                             | Sprint | Statut                                                              |
+| --- | --------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------- |
+| S0  | Initialisation : socle, CI, lint, i18n FR/AR avec RTL, fiches de décision         | 1      | Fait (S0-a socle, S0-b i18n, S0-c base de données), PR #2 en fusion |
+| S1  | Multi-établissement, auth, rôles (direction, caisse, enseignant, parent), RLS     | 1      | À faire                                                             |
+| S2  | Élèves, tuteurs, groupes/classes, inscriptions, import CSV                        | 1      | À faire                                                             |
+| S3  | Absences : saisie enseignant, vue direction                                       | 2      | À faire                                                             |
+| S4  | Notes simples : évaluations, saisie, consultation                                 | 2      | À faire                                                             |
+| S5  | Plans tarifaires (mensuel, par matière, annuel) et génération des échéances       | 2      | À faire                                                             |
+| S6  | Encaissement espèces : reçus numérotés, annulation motivée, clôture de caisse     | 3      | À faire                                                             |
+| S7  | Espace parent PWA : absences, notes, solde, reçus                                 | 3      | À faire                                                             |
+| S8  | WhatsApp Cloud API : templates, webhooks, statuts, opt-in, coût par établissement | 4      | À faire                                                             |
+| S9  | Relances : règles J-3, J+1, J+7, langue du parent, arrêt dès le paiement          | 4      | À faire                                                             |
+| S10 | Traduction FR/AR/darija des messages, validée par un humain avant envoi           | 5      | À faire                                                             |
+| S11 | Consentement des parents (CNDP), journal d'accès, mentions                        | 5      | À faire                                                             |
+| S12 | Mise en production, sauvegardes, monitoring, import des données du pilote         | 5      | À faire                                                             |
 
 Jalon 2, V1 écoles (sprints 6 à 8) : S13 paiement en ligne CMI, S14 SMS de secours, S15 assistant IA parents sur WhatsApp, S16 spécificités école (trimestres, bulletin, export Massar), S17 messagerie dans l'application. Coupes envisagées si retard, dans l'ordre : S14, S17, S15, S4. La darija et les relances ne sont pas coupables : ce sont les différenciateurs.
 
-Prochaine session attendue : S1 (établissements, auth, rôles, RLS), à confirmer par Ahmed. Fusionner d'abord la PR #1 puis la PR S0-c.
+Prochaine session attendue : S1-a (tenancy, rôles, RLS), après fusion de la PR #2.
 
 ## Démarches hors code qui bloquent des stories
 
@@ -75,6 +81,7 @@ Prochaine session attendue : S1 (établissements, auth, rôles, RLS), à confirm
 | S0-b           | 2026-10-08 | i18n FR/AR : next-intl 4.14.9, routage `/fr` `/ar` avec redirection de `/` par `src/proxy.ts`, `lang`/`dir` sur `<html>`, messages typés, `pnpm i18n:check` dans `pnpm lint`, polices IBM Plex, `src/lib/i18n/format.ts` (MAD, chiffres latins en arabe), `LanguageSwitcher`, règle RTL étendue (bordures, arrondis, float, clear, scroll), ADR 0005. Lint, typecheck, tests unitaires et e2e, build au vert en local.                                                                                |
 | S0-c           | 2026-10-09 | Supabase local (CLI 2.120.0, `config.toml`), scripts `db:*` en Node, convention de rollback `supabase/rollbacks/*.down.sql` vérifiée par `db:check-rollbacks` (lint) et `db:rollback-check` (CI), migration `app_private`, test pgTAP (8 assertions), clients `client`/`server`/`admin` typés, `src/env.ts` avec `getServerEnv()`, `check:bundle` après le build, job CI `db`, ADR 0006. PR S0-b (#1) ouverte en début de session. Docker Desktop 4.23 a dû être mis à jour (moteur muet avec WSL 3). |
 | S0-c (reprise) | 2026-10-14 | Le travail était déjà commité et poussé. Nouveau modèle `app_private` par une nouvelle migration `app_private_privileges` (l'ancienne étant poussée) : USAGE pour authenticated, défaut global EXECUTE à PUBLIC révoqué pour `postgres`, défauts propres au schéma révoqués ; test pgTAP réécrit (17 assertions) ; test Vitest de `config.toml` (schéma non exposé) ; ADR 0006 (point 7) et CLAUDE.md mis à jour. DoD au vert en local.                                                               |
+| S0 (clôture)   | 2026-10-14 | PR #1 fusionnée (rebase and merge) ; S0-c rebasée sur `main` (`git rebase --onto`), PR #2 reciblée sur `main` ; CI au vert sur GitHub pour `verify`, `e2e` et `db` (premier passage réussi du job `db`, ~2 min 40) ; déclencheur `push` limité à `main` ; `docs/contexte.md` devient le fichier d'état d'avancement (règle dans CLAUDE.md).                                                                                                                                                           |
 
 ## Pièges connus
 
@@ -98,10 +105,8 @@ Prochaine session attendue : S1 (établissements, auth, rôles, RLS), à confirm
 - Délai d'instruction CNDP (ADR 0003).
 - Compatibilité OpenNext / Cloudflare Workers à vérifier à chaque fonctionnalité Next.js adoptée (ADR 0004).
 - Budget à la mise en service : à trancher par Ahmed avant le sprint 5.
-- Vérifier le passage de la CI sur GitHub (jamais constaté en session), notamment le téléchargement des polices au build et le test ESLint à froid.
 - Node local en 24.11.1 : passer en 24.21.0 pour coller à la CI.
 - Proxy Next.js 16 (`src/proxy.ts`, runtime Node.js) sur Cloudflare : support OpenNext récent et expérimental, à valider à la session de déploiement (repli : `middleware.ts` ou redirection fixe vers `/fr`, ADR 0005).
 - Page 404 : celle par défaut de Next.js, en anglais. Ajouter un `not-found` traduit avec la première page métier.
 - Relecture des textes arabes par un locuteur natif avant la mise en service.
 - S1 : aides RLS dans `app_private` avec `GRANT EXECUTE` explicite (ADR 0006, tranché) ; rafraîchissement de session Supabase dans `src/proxy.ts` avec next-intl (ADR 0006).
-- Premier passage du job CI `db` sur GitHub (temps de téléchargement des images, limite de débit ECR).
