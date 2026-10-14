@@ -1,0 +1,85 @@
+-- Helpers pgTAP partagés, inclus par `\ir helpers/auth.psql` après `begin;`.
+-- Extension .psql : pas lancé comme test par `pnpm db:test` (seuls les
+-- *.sql le sont). Créés dans le schéma tests, à l'intérieur de la transaction
+-- du test, donc annulés avec elle : rien ne reste en base.
+-- Données fictives uniquement (ADR 0003).
+
+create schema tests;
+
+-- Appelables après un changement de rôle (passage d'un utilisateur à un
+-- autre). Le défaut global ne donne pas EXECUTE à PUBLIC (ADR 0006).
+grant usage on schema tests to anon, authenticated;
+
+-- Crée un utilisateur fictif dans auth.users (le trigger d'inscription crée
+-- son profil). À appeler en tant que postgres.
+create function tests.create_user(
+  p_id uuid,
+  p_email text,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns uuid
+language sql
+as $$
+  insert into auth.users (
+    id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at
+  )
+  values (
+    p_id, '00000000-0000-0000-0000-000000000000', 'authenticated',
+    'authenticated', p_email, p_metadata, now(), now()
+  )
+  returning id;
+$$;
+
+-- Simule une requête de l'utilisateur via l'API : rôle authenticated et
+-- claims JWT lus par auth.uid(). Valable jusqu'à la fin de la transaction
+-- ou jusqu'au prochain appel.
+create function tests.authenticate_as(p_user_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', p_user_id, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+-- Simule un visiteur non connecté (clé anon, sans session).
+create function tests.authenticate_as_anon()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+  perform set_config('role', 'anon', true);
+end;
+$$;
+
+-- Revient au rôle de la session (postgres) et efface les claims.
+create function tests.clear_authentication()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('role', 'none', true);
+  perform set_config('request.jwt.claims', '', true);
+end;
+$$;
+
+-- Nombre de lignes affectées par une instruction (UPDATE, DELETE…), exécutée
+-- avec les droits du rôle courant. Un UPDATE refusé par la RLS affecte
+-- 0 ligne sans erreur ; un refus de droit lève 42501.
+create function tests.affected_rows(p_sql text)
+returns integer
+language plpgsql
+as $$
+declare
+  n integer;
+begin
+  execute p_sql;
+  get diagnostics n = row_count;
+  return n;
+end;
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated;
