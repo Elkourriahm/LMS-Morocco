@@ -1,6 +1,6 @@
 # ADR 0007 : Tenancy, rôles et RLS
 
-- **Date** : 2026-10-14
+- **Date** : 2026-10-14 (révisée le 2026-10-16 : politiques évaluées une fois par requête)
 - **Statut** : Acceptée
 
 ## Contexte
@@ -19,8 +19,10 @@ La base est partagée entre établissements et isolée par RLS (ADR 0002). Il fa
 2. **Rôles attribués par établissement, cumulables.** Table `public.memberships` (`school_id`, `user_id`, `role` de type `app_role`), unique sur `(school_id, user_id, role)`. Un utilisateur peut appartenir à plusieurs établissements et y avoir plusieurs rôles. `public.profiles` (1-1 avec `auth.users`) ne contient que `full_name` et `preferred_locale`.
 3. **Fonctions d'aide dans `app_private`** (ADR 0006), `SECURITY DEFINER`, `STABLE`, `search_path = ''`, noms qualifiés, EXECUTE accordé à `authenticated` seul :
    - `user_school_ids()` : établissements de l'utilisateur courant ;
-   - `has_role(school_id, roles[])` : l'utilisateur courant a-t-il l'un de ces rôles dans cet établissement.
-     `SECURITY DEFINER` (propriétaire `postgres`, BYPASSRLS) évite qu'une politique de `memberships` se rappelle elle-même. Elles ne renvoient que ce qui concerne `auth.uid()`. Aucune fonction `SECURITY DEFINER` dans `public` (exposé par l'API). Dans les politiques : `(select auth.uid())` et `id in (select app_private.user_school_ids())`, évalués une fois par requête.
+   - `user_school_ids_with_roles(roles[])` : établissements où l'utilisateur courant a l'un de ces rôles ;
+   - `has_role(school_id, roles[])` : l'utilisateur courant a-t-il l'un de ces rôles dans cet établissement. Réservée aux vérifications ponctuelles (côté serveur, sur un établissement donné), **jamais dans une politique**.
+     `SECURITY DEFINER` (propriétaire `postgres`, BYPASSRLS) évite qu'une politique de `memberships` se rappelle elle-même. Elles ne renvoient que ce qui concerne `auth.uid()`. Aucune fonction `SECURITY DEFINER` dans `public` (exposé par l'API).
+   - **Forme des politiques** : toujours `colonne in (select fonction_ensemble(...))` et `(select auth.uid())`, jamais une fonction dont un argument dépend de la ligne. Exemple : `school_id in (select app_private.user_school_ids_with_roles('{direction}'))`. La sous-requête n'est pas corrélée : Postgres l'évalue une seule fois (InitPlan ou `hashed SubPlan`) puis compare par hachage. `has_role(school_id, ...)` dans une politique était évaluée à chaque ligne. Mesure sur 1 000 memberships (10 établissements), en tant que direction : `select * from memberships` passe de 999 appels de `has_role` et 7,9 ms à 1 appel et 0,5 ms ; `select * from profiles` de 1 099 appels et 9,6 ms à 2 appels et 0,64 ms. Un test pgTAP refuse toute politique de `public` qui appelle `has_role(`.
 4. **RLS pour les lignes, droits par colonne pour les champs.** La RLS filtre des lignes, pas des colonnes. Sur chaque table : `revoke all` à `anon` et `authenticated` (Supabase leur accorde tout par défaut dans `public`), puis `grant select` à `authenticated` et `grant update (colonnes)` pour les seuls champs modifiables. Une opération non prévue échoue deux fois : par l'absence de droit (erreur 42501), et par l'absence de politique. Une politique par opération autorisée, toujours `to authenticated`, jamais `using (true)`. `updated_at` est maintenu par trigger (`app_private.set_updated_at`).
 5. **Droits actuels** :
    - `schools` : lecture par les membres ; mise à jour de `name` et `default_locale` par la direction.
@@ -36,8 +38,9 @@ Alternatives écartées : rôle unique par utilisateur (ne couvre ni plusieurs �
 
 ## Conséquences
 
-- Toute nouvelle table métier : `school_id` non nul, clé étrangère vers `schools` (`on delete cascade` sauf raison contraire) et index ; RLS activée dans la même migration ; politiques fondées sur `user_school_ids()` et `has_role()` ; `revoke all` puis droits par colonne ; fichier pgTAP sur les deux établissements du jeu de test.
+- Toute nouvelle table métier : `school_id` non nul, clé étrangère vers `schools` (`on delete cascade` sauf raison contraire) et index ; RLS activée dans la même migration ; politiques de la forme `school_id in (select app_private.user_school_ids())` ou `school_id in (select app_private.user_school_ids_with_roles('{...}'))` ; `revoke all` puis droits par colonne ; fichier pgTAP sur les deux établissements du jeu de test.
 - Une nouvelle fonction d'aide RLS est ajoutée à la liste autorisée du test `app_private_privileges`, avec sa justification dans sa migration.
-- Un changement de rôle prend effet immédiatement (lu en base à chaque requête), au prix d'une lecture de `memberships` par requête, couverte par l'index `(user_id, school_id)`.
+- Un changement de rôle prend effet immédiatement (lu en base à chaque requête), au prix d'une lecture de `memberships` par requête (et non par ligne), couverte par l'index `(user_id, school_id)`.
+- Une nouvelle fonction d'aide RLS est une fonction d'ensemble sans argument lié à la ligne ; elle est ajoutée aux listes d'inventaire des tests `app_private_privileges` et `tenancy_functions`.
 - La suppression d'un utilisateur dans `auth.users` supprime son profil et ses appartenances. La suppression d'un établissement supprime ses appartenances (et, plus tard, ses données métier).
 - L'inscription réelle par GoTrue (`supabase_auth_admin`) n'est pas simulable en pgTAP local : à vérifier de bout en bout en S1-b.
