@@ -75,7 +75,8 @@ select is_empty(
         r.rolname = 'authenticated'
         and p.oid in (
           'app_private.user_school_ids()'::regprocedure,
-          'app_private.has_role(uuid, public.app_role[])'::regprocedure
+          'app_private.has_role(uuid, public.app_role[])'::regprocedure,
+          'app_private.user_school_ids_with_roles(public.app_role[])'::regprocedure
         )
       )
   $$,
