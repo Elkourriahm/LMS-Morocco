@@ -20,7 +20,7 @@ Porteur : Ahmed, seul développeur, qui travaille par sessions Claude Code numé
 
 - **Fait** : S0 (socle, i18n FR/AR, Supabase local ; PR #1 et #2 fusionnées). S1-a : modèle multi-établissement en base (ADR 0007) : `schools`, `profiles`, `memberships` (rôles cumulables par établissement), aides RLS `app_private.user_school_ids()`, `user_school_ids_with_roles()` et `has_role()`, politiques par opération évaluées une fois par requête, droits par colonne, trigger de profil à l'inscription, 95 tests pgTAP (dont 51 d'isolation sur deux établissements). Branche `feat/s1a-tenancy-rls`, PR #3 vers `main`.
 - **Fait (S1-b, branche `feat/s1b-auth-personnel`, empilée sur S1-a)** : authentification du personnel (ADR 0008). Connexion email et mot de passe (Server Actions, zod, message unique « Identifiants invalides »), mot de passe oublié (même message, email FR/AR, lien `token_hash` vérifié côté serveur, nouveau mot de passe de 10 caractères minimum), déconnexion ; inscription publique désactivée ; `src/proxy.ts` unique (Supabase puis next-intl, refus par défaut, `next` validé contre la redirection ouverte) ; établissement courant en cookie revalidé sous RLS à chaque requête par `getCurrentSchool()` ; pages connexion, mot de passe oublié, nouveau mot de passe, choix d'établissement, accès non disponible (parents : « bientôt »), tableau de bord provisoire, en FR et AR ; `pnpm db:seed-dev` (fictif, local uniquement, idempotent) ; `pnpm test:integration` (trigger d'inscription via GoTrue, seed) ; e2e sur build de production (23 tests) ; correction de `pnpm db:new` (stdin).
-- **En cours** : relecture et fusion de la PR #4 (S1-b), rebasée sur `main` après la fusion de la PR #3 (S1-a).
+- **En cours** : relecture et fusion de la PR #5 (S1-b, vers `main`). La PR #4 a été fusionnée par erreur dans `feat/s1a-tenancy-rls` (sans effet sur `main`) ; #5 la remplace.
 - **Prochaine étape** : S1-c, invitations et gestion des membres côté serveur : invitation par email (création du compte et du membership), une direction peut nommer une autre direction, interdiction en base de retirer la dernière direction d'un établissement (ADR 0007).
 
 ## État technique
@@ -49,7 +49,7 @@ Jalon 1, pilote dans un centre de soutien (sprints 1 à 5) :
 | ID  | Story                                                                             | Sprint | Statut                                                              |
 | --- | --------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------- |
 | S0  | Initialisation : socle, CI, lint, i18n FR/AR avec RTL, fiches de décision         | 1      | Fait (S0-a socle, S0-b i18n, S0-c base de données), PR #2 en fusion |
-| S1  | Multi-établissement, auth, rôles (direction, caisse, enseignant, parent), RLS     | 1      | En cours : S1-a fusionné, S1-b en PR (#4) ; S1-c invitations        |
+| S1  | Multi-établissement, auth, rôles (direction, caisse, enseignant, parent), RLS     | 1      | En cours : S1-a fusionné, S1-b en PR (#5) ; S1-c invitations        |
 | S2  | Élèves, tuteurs, groupes/classes, inscriptions, import CSV                        | 1      | À faire                                                             |
 | S3  | Absences : saisie enseignant, vue direction                                       | 2      | À faire                                                             |
 | S4  | Notes simples : évaluations, saisie, consultation                                 | 2      | À faire                                                             |
@@ -64,7 +64,7 @@ Jalon 1, pilote dans un centre de soutien (sprints 1 à 5) :
 
 Jalon 2, V1 écoles (sprints 6 à 8) : S13 paiement en ligne CMI, S14 SMS de secours, S15 assistant IA parents sur WhatsApp, S16 spécificités école (trimestres, bulletin, export Massar), S17 messagerie dans l'application. Coupes envisagées si retard, dans l'ordre : S14, S17, S15, S4. La darija et les relances ne sont pas coupables : ce sont les différenciateurs.
 
-Prochaine session attendue : S1-c (invitations et gestion des membres), après fusion de la PR #4 (S1-b).
+Prochaine session attendue : S1-c (invitations et gestion des membres), après fusion de la PR #5 (S1-b).
 
 ## Mise en production
 
