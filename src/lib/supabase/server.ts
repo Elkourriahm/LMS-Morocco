@@ -27,8 +27,8 @@ export async function createClient() {
             }
           } catch {
             // Appelé depuis un Server Component, où les cookies sont en
-            // lecture seule : le rafraîchissement de session se fera dans
-            // src/proxy.ts (story S1, authentification).
+            // lecture seule : la session est rafraîchie par src/proxy.ts
+            // avant le rendu (ADR 0008).
           }
         },
       },
