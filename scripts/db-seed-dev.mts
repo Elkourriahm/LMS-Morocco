@@ -19,19 +19,22 @@ for (const file of ['.env.local', '.env']) {
     process.loadEnvFile(`${repoRoot}${file}`);
 }
 
+// Avant tout appel réseau. process.exitCode plutôt que process.exit() : sous
+// Windows, process.exit() fait ici planter libuv (code 0xC0000409).
+let refused = false;
 try {
-  // Avant tout appel réseau.
   assertLocalSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
 } catch (error) {
-  if (error instanceof SeedRefusedError) {
-    console.error(`db:seed-dev : ${error.message}`);
-    process.exit(1);
-  }
-  throw error;
+  if (!(error instanceof SeedRefusedError)) throw error;
+  console.error(`db:seed-dev : ${error.message}`);
+  process.exitCode = 1;
+  refused = true;
 }
 
-const { createAdminClient } = await import('@/lib/supabase/admin');
-await seedDev(createAdminClient());
-console.log(
-  `db:seed-dev : 2 établissements, ${seedUsers.length} comptes fictifs (${seedUsers.map((u) => u.email).join(', ')}).`,
-);
+if (!refused) {
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  await seedDev(createAdminClient());
+  console.log(
+    `db:seed-dev : 2 établissements, ${seedUsers.length} comptes fictifs (${seedUsers.map((u) => u.email).join(', ')}).`,
+  );
+}
