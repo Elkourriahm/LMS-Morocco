@@ -3,7 +3,9 @@ import { hasLocale } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { env } from '@/env';
+import { authRoutes } from '@/lib/auth/routes';
 import { formatDate, formatMAD } from '@/lib/i18n/format';
+import { Link } from '@/lib/i18n/navigation';
 import { routing } from '@/lib/i18n/routing';
 
 // Valeurs fictives servant d'exemple de formatage.
@@ -23,6 +25,12 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         <h1 className="text-3xl font-semibold">{env.NEXT_PUBLIC_APP_NAME}</h1>
         <p className="mt-3 text-lg">{t('tagline')}</p>
       </div>
+      <Link
+        href={authRoutes.login}
+        className="rounded-md bg-emerald-800 px-4 py-2 font-semibold text-white"
+      >
+        {t('loginLink')}
+      </Link>
       <section aria-labelledby="examples-title" className="text-start">
         <h2 id="examples-title" className="text-lg font-semibold">
           {t('examplesTitle')}
