@@ -6,13 +6,77 @@
     "tagline": "Le socle de l’application est prêt.",
     "examplesTitle": "Exemples de formatage",
     "dateLabel": "Date",
-    "amountLabel": "Montant"
+    "amountLabel": "Montant",
+    "loginLink": "Se connecter"
   },
   "LanguageSwitcher": {
     "label": "Langue",
     "locales": {
       "fr": "Français",
       "ar": "العربية"
+    }
+  },
+  "Auth": {
+    "fields": {
+      "email": "Adresse email",
+      "password": "Mot de passe",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le mot de passe"
+    },
+    "login": {
+      "title": "Connexion du personnel",
+      "submit": "Se connecter",
+      "submitting": "Connexion…",
+      "forgotLink": "Mot de passe oublié ?"
+    },
+    "forgot": {
+      "title": "Mot de passe oublié",
+      "intro": "Indiquez votre adresse email. Si un compte y correspond, vous recevrez un lien pour choisir un nouveau mot de passe.",
+      "submit": "Envoyer le lien",
+      "submitting": "Envoi…",
+      "sent": "Si un compte correspond à cette adresse, un email de réinitialisation vient d’être envoyé. Pensez à vérifier vos courriers indésirables.",
+      "backToLogin": "Retour à la connexion",
+      "linkInvalid": "Ce lien de réinitialisation est invalide ou a expiré. Demandez-en un nouveau."
+    },
+    "newPassword": {
+      "title": "Nouveau mot de passe",
+      "hint": "Au moins {min} caractères.",
+      "submit": "Enregistrer le mot de passe",
+      "submitting": "Enregistrement…"
+    },
+    "errors": {
+      "required": "Ce champ est obligatoire.",
+      "invalidEmail": "Saisissez une adresse email valide.",
+      "passwordTooShort": "Le mot de passe doit contenir au moins {min} caractères.",
+      "passwordTooLong": "Le mot de passe est trop long.",
+      "passwordMismatch": "Les deux mots de passe ne correspondent pas.",
+      "invalidCredentials": "Identifiants invalides.",
+      "samePassword": "Choisissez un mot de passe différent de l’actuel.",
+      "unexpected": "Une erreur est survenue. Réessayez dans un instant."
+    }
+  },
+  "App": {
+    "signOut": "Se déconnecter",
+    "listSeparator": ", ",
+    "roles": {
+      "direction": "Direction",
+      "caisse": "Caisse",
+      "enseignant": "Enseignant"
+    },
+    "dashboard": {
+      "title": "Tableau de bord",
+      "school": "Établissement",
+      "roles": "Vos rôles",
+      "changeSchool": "Changer d’établissement"
+    },
+    "choose": {
+      "title": "Choisir un établissement",
+      "intro": "Vous travaillez dans plusieurs établissements. Choisissez celui dans lequel vous voulez travailler."
+    },
+    "unavailable": {
+      "title": "Accès non disponible",
+      "noAccess": "Votre compte n’a accès à aucun établissement. Contactez la direction de votre établissement.",
+      "parentSoon": "L’espace parent arrive bientôt."
     }
   }
 }
