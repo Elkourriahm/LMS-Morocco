@@ -13,6 +13,11 @@ export const envSchema = z.object({
   NEXT_PUBLIC_APP_NAME: z.string().min(1).default('LMS Maroc'),
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  // Origine publique de l'application, sans « / » final : liens envoyés par
+  // email (réinitialisation du mot de passe, ADR 0008).
+  NEXT_PUBLIC_SITE_URL: z
+    .url()
+    .refine((value) => !value.endsWith('/'), 'Sans « / » final.'),
 });
 
 export const serverEnvSchema = envSchema
@@ -71,6 +76,7 @@ export const env: Env = envSchema.parse({
   NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
 });
 
 let serverEnv: ServerEnv | undefined;
