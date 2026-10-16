@@ -9,15 +9,24 @@ const cliEntry = `${repoRoot}node_modules/supabase/dist/supabase.js`;
 type RunOptions = {
   /** Capture la sortie standard au lieu de l'afficher. */
   capture?: boolean;
+  /** Dossier du projet Supabase (`--workdir`). Par défaut : le dépôt. */
+  workdir?: string;
 };
 
 export class SupabaseCliError extends Error {}
 
+/**
+ * Entrée standard toujours fermée : quand stdin n'est pas un terminal (agent,
+ * script, CI), certaines commandes le lisent jusqu'à sa fin. `migration new`
+ * y lit le contenu de la migration et attendait indéfiniment avec un tube
+ * resté ouvert. Aucune commande des scripts n'est interactive.
+ */
 export function supabase(args: string[], options: RunOptions = {}): string {
-  const result = spawnSync(process.execPath, [cliEntry, ...args], {
+  const workdir = options.workdir ? ['--workdir', options.workdir] : [];
+  const result = spawnSync(process.execPath, [cliEntry, ...args, ...workdir], {
     cwd: repoRoot,
     encoding: 'utf8',
-    stdio: ['inherit', options.capture ? 'pipe' : 'inherit', 'inherit'],
+    stdio: ['ignore', options.capture ? 'pipe' : 'inherit', 'inherit'],
     maxBuffer: 64 * 1024 * 1024,
   });
   if (result.error) throw result.error;
