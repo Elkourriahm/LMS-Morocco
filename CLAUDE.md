@@ -48,7 +48,7 @@ SaaS multi-établissement (écoles privées et centres de soutien marocains). St
 - **Données réelles** : aucune donnée réelle d'enfant avant l'autorisation CNDP et le consentement des parents (ADR 0003). Données fictives uniquement.
 - **Traductions** (ADR 0005) : tout texte visible passe par `messages/fr.json` et `messages/ar.json` (`useTranslations` / `getTranslations` de next-intl) ; aucun texte en dur dans les composants, y compris `aria-label`, `title`, `alt` et métadonnées. Ajouter chaque clé dans les deux fichiers. Interface en FR et AR seulement, pas de darija. Liens internes via `Link` de `@/lib/i18n/navigation`, pas `next/link`.
 - **Formatage** : dates, nombres et montants (MAD) uniquement via `src/lib/i18n/format.ts` (chiffres latins en arabe, fuseau `Africa/Casablanca`). Pas de `toLocaleString` ni de `Intl` direct ailleurs. Formater côté serveur de préférence (Server Components) : le résultat d'Intl varie selon le navigateur.
-- **Déploiement** : cible Cloudflare Workers via OpenNext (ADR 0004). Vérifier la compatibilité de toute fonctionnalité Next.js ou API Node utilisée.
+- **Déploiement** : cible Cloudflare Workers via OpenNext (ADR 0004). Réglages hors dépôt (Supabase hébergé, Cloudflare) : `docs/mise-en-production.md`, à mettre à jour dans la même PR que tout changement d'auth, d'email, de redirection ou de variable d'environnement. Vérifier la compatibilité de toute fonctionnalité Next.js ou API Node utilisée.
 - **Dépendances** : versions exactes (`pnpm add -E`). Ne pas contourner la politique de délai minimal de publication de pnpm (`minimumReleaseAgeExclude`) sans le signaler.
 
 <!-- BEGIN:nextjs-agent-rules -->

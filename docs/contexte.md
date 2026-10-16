@@ -20,7 +20,7 @@ Porteur : Ahmed, seul développeur, qui travaille par sessions Claude Code numé
 
 - **Fait** : S0 (socle, i18n FR/AR, Supabase local ; PR #1 et #2 fusionnées). S1-a : modèle multi-établissement en base (ADR 0007) : `schools`, `profiles`, `memberships` (rôles cumulables par établissement), aides RLS `app_private.user_school_ids()`, `user_school_ids_with_roles()` et `has_role()`, politiques par opération évaluées une fois par requête, droits par colonne, trigger de profil à l'inscription, 95 tests pgTAP (dont 51 d'isolation sur deux établissements). Branche `feat/s1a-tenancy-rls`, PR #3 vers `main`.
 - **Fait (S1-b, branche `feat/s1b-auth-personnel`, empilée sur S1-a)** : authentification du personnel (ADR 0008). Connexion email et mot de passe (Server Actions, zod, message unique « Identifiants invalides »), mot de passe oublié (même message, email FR/AR, lien `token_hash` vérifié côté serveur, nouveau mot de passe de 10 caractères minimum), déconnexion ; inscription publique désactivée ; `src/proxy.ts` unique (Supabase puis next-intl, refus par défaut, `next` validé contre la redirection ouverte) ; établissement courant en cookie revalidé sous RLS à chaque requête par `getCurrentSchool()` ; pages connexion, mot de passe oublié, nouveau mot de passe, choix d'établissement, accès non disponible (parents : « bientôt »), tableau de bord provisoire, en FR et AR ; `pnpm db:seed-dev` (fictif, local uniquement, idempotent) ; `pnpm test:integration` (trigger d'inscription via GoTrue, seed) ; e2e sur build de production (23 tests) ; correction de `pnpm db:new` (stdin).
-- **En cours** : fusion de la PR #3 (S1-a), puis de la PR S1-b (à recibler sur `main` après la #3).
+- **En cours** : relecture et fusion de la PR #4 (S1-b), rebasée sur `main` après la fusion de la PR #3 (S1-a).
 - **Prochaine étape** : S1-c, invitations et gestion des membres côté serveur : invitation par email (création du compte et du membership), une direction peut nommer une autre direction, interdiction en base de retirer la dernière direction d'un établissement (ADR 0007).
 
 ## État technique
@@ -49,7 +49,7 @@ Jalon 1, pilote dans un centre de soutien (sprints 1 à 5) :
 | ID  | Story                                                                             | Sprint | Statut                                                              |
 | --- | --------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------- |
 | S0  | Initialisation : socle, CI, lint, i18n FR/AR avec RTL, fiches de décision         | 1      | Fait (S0-a socle, S0-b i18n, S0-c base de données), PR #2 en fusion |
-| S1  | Multi-établissement, auth, rôles (direction, caisse, enseignant, parent), RLS     | 1      | En cours : S1-a et S1-b faits (PR à fusionner) ; S1-c invitations   |
+| S1  | Multi-établissement, auth, rôles (direction, caisse, enseignant, parent), RLS     | 1      | En cours : S1-a fusionné, S1-b en PR (#4) ; S1-c invitations        |
 | S2  | Élèves, tuteurs, groupes/classes, inscriptions, import CSV                        | 1      | À faire                                                             |
 | S3  | Absences : saisie enseignant, vue direction                                       | 2      | À faire                                                             |
 | S4  | Notes simples : évaluations, saisie, consultation                                 | 2      | À faire                                                             |
@@ -64,7 +64,11 @@ Jalon 1, pilote dans un centre de soutien (sprints 1 à 5) :
 
 Jalon 2, V1 écoles (sprints 6 à 8) : S13 paiement en ligne CMI, S14 SMS de secours, S15 assistant IA parents sur WhatsApp, S16 spécificités école (trimestres, bulletin, export Massar), S17 messagerie dans l'application. Coupes envisagées si retard, dans l'ordre : S14, S17, S15, S4. La darija et les relances ne sont pas coupables : ce sont les différenciateurs.
 
-Prochaine session attendue : S1-c (invitations et gestion des membres), après fusion des PR S1-a et S1-b.
+Prochaine session attendue : S1-c (invitations et gestion des membres), après fusion de la PR #4 (S1-b).
+
+## Mise en production
+
+Réglages à appliquer à la main sur Supabase hébergé et Cloudflare (inscriptions fermées, Site URL et redirections, gabarit `recovery.html`, SMTP, durée des liens, variables d'environnement, région UE) : [`docs/mise-en-production.md`](mise-en-production.md). `supabase/config.toml` ne couvre que le local.
 
 ## Démarches hors code qui bloquent des stories
 
@@ -103,6 +107,7 @@ Prochaine session attendue : S1-c (invitations et gestion des membres), après f
 - **`next dev` sous requêtes parallèles** (16.3.8) : erreurs intermittentes « Unexpected end of JSON input » en générant les routes. Les e2e tournent donc sur `next build` + `next start` ; arrêter `pnpm dev` avant `pnpm test:e2e` (Playwright réutilise un serveur déjà lancé).
 - **CLI Supabase et stdin** : la CLI lit stdin quand ce n'est pas un terminal (`migration new` attendait sa fin). Corrigé dans `scripts/lib/supabase.mts` (stdin toujours fermé, test de non-régression).
 - **`[auth.email].enable_signup = false`** désactive tout le fournisseur email dans la CLI (connexion comprise) : fermer les inscriptions par `[auth].enable_signup` seulement.
+- **`process.exit()` sous Windows** dans un script lancé avec `--import` (hooks de module) : plantage libuv (`UV_HANDLE_CLOSING`, code 0xC0000409) au lieu du code demandé. Utiliser `process.exitCode`.
 - **Scripts Node qui importent `src/`** : `--conditions=react-server` (server-only) et `--import ./scripts/lib/alias-hooks.mts` (alias `@/`), comme `pnpm db:seed-dev`.
 - **`String.replace` en JavaScript** : dans le texte de remplacement, `$$` devient `$`. Pour insérer du SQL avec des chaînes `$$`, passer une fonction (`s.replace(a, () => b)`).
 - **Droits par défaut** : EXECUTE à PUBLIC sur les fonctions est un défaut global intégré de PostgreSQL, qu'un `ALTER DEFAULT PRIVILEGES ... IN SCHEMA` ne retire pas (vérifié) ; la migration `app_private_privileges` le révoque globalement pour `postgres`. Une fonction créée par un autre rôle n'est pas couverte.
