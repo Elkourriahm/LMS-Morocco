@@ -24,8 +24,10 @@
     "db:test": "supabase test db --local",
     "db:rollback-check": "node scripts/db-rollback-check.mts",
     "db:check-rollbacks": "node scripts/db-check-rollbacks.mts",
+    "db:seed-dev": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --conditions=react-server --import ./scripts/lib/alias-hooks.mts scripts/db-seed-dev.mts",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
   },
