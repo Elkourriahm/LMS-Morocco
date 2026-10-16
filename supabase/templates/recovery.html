@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <body>
+    <div lang="fr" dir="ltr">
+      <h2>Réinitialisation du mot de passe</h2>
+      <p>
+        Une demande de réinitialisation du mot de passe a été faite pour ce
+        compte. Pour choisir un nouveau mot de passe, suivez ce lien :
+      </p>
+      <p>
+        <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery"
+          >Choisir un nouveau mot de passe</a
+        >
+      </p>
+      <p>
+        Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.
+      </p>
+    </div>
+    <hr />
+    <div lang="ar" dir="rtl">
+      <h2>إعادة تعيين كلمة المرور</h2>
+      <p>
+        تم تقديم طلب لإعادة تعيين كلمة المرور لهذا الحساب. لاختيار كلمة مرور
+        جديدة، اتبع هذا الرابط:
+      </p>
+      <p>
+        <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery"
+          >اختيار كلمة مرور جديدة</a
+        >
+      </p>
+      <p>إذا لم تكن صاحب هذا الطلب، فتجاهل هذه الرسالة.</p>
+    </div>
+  </body>
+</html>
