@@ -2,7 +2,7 @@
 
 Socle technique d'un SaaS multi-établissement pour les écoles privées et les centres de soutien marocains : vie scolaire, paiements avec relances, communication WhatsApp traduite (FR/AR/darija). Interfaces en français et en arabe (RTL) ; PWA pour les parents, application web pour la direction.
 
-État actuel : socle et internationalisation FR/AR (RTL). La page d'accueil est un placeholder traduit ; Supabase local avec migrations réversibles et tests pgTAP ; modèle multi-établissement (établissements, profils, appartenances avec rôles) isolé par RLS. Ni écran métier, ni authentification côté application.
+État actuel : socle et internationalisation FR/AR (RTL). La page d'accueil est un placeholder traduit ; Supabase local avec migrations réversibles et tests pgTAP ; modèle multi-établissement (établissements, profils, appartenances avec rôles) isolé par RLS ; connexion du personnel (email et mot de passe), choix de l'établissement courant et tableau de bord provisoire. Aucun écran métier.
 
 ## Prérequis
 
@@ -24,6 +24,7 @@ npm install -g pnpm@12.9.1
 pnpm install
 cp .env.example .env.local   # PowerShell : Copy-Item .env.example .env.local
 pnpm db:start                # premier lancement : plusieurs Go d'images à télécharger
+pnpm db:seed-dev             # comptes fictifs (voir « Comptes de développement »)
 pnpm dev
 ```
 
@@ -35,16 +36,17 @@ Variables d'environnement : voir `.env.example`, à copier vers `.env.local` (ob
 
 ## Commandes
 
-| Commande          | Rôle                                                                                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`        | Serveur de développement                                                                                      |
-| `pnpm build`      | Build de production, puis `check:bundle` : échoue si la clé service_role est dans `.next/static`              |
-| `pnpm lint`       | `pnpm i18n:check`, `pnpm db:check-rollbacks`, ESLint (règles Next.js et règle RTL) puis vérification Prettier |
-| `pnpm i18n:check` | Vérifie que `messages/fr.json` et `messages/ar.json` ont les mêmes clés, sans valeur vide                     |
-| `pnpm format`     | Reformate tout le dépôt avec Prettier                                                                         |
-| `pnpm typecheck`  | Génère les types Next (`next typegen`) puis `tsc --noEmit`                                                    |
-| `pnpm test`       | Tests unitaires Vitest                                                                                        |
-| `pnpm test:e2e`   | Tests e2e Playwright (lance `next dev` automatiquement)                                                       |
+| Commande                | Rôle                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`              | Serveur de développement                                                                                            |
+| `pnpm build`            | Build de production, puis `check:bundle` : échoue si la clé service_role est dans `.next/static`                    |
+| `pnpm lint`             | `pnpm i18n:check`, `pnpm db:check-rollbacks`, ESLint (règles Next.js et règle RTL) puis vérification Prettier       |
+| `pnpm i18n:check`       | Vérifie que `messages/fr.json` et `messages/ar.json` ont les mêmes clés, sans valeur vide                           |
+| `pnpm format`           | Reformate tout le dépôt avec Prettier                                                                               |
+| `pnpm typecheck`        | Génère les types Next (`next typegen`) puis `tsc --noEmit`                                                          |
+| `pnpm test`             | Tests unitaires Vitest                                                                                              |
+| `pnpm test:integration` | Tests d'intégration Vitest (`*.int.test.ts`) : Supabase local démarré requis                                        |
+| `pnpm test:e2e`         | Tests e2e Playwright, sur un build de production lancé automatiquement. Supabase local et `pnpm db:seed-dev` requis |
 
 ### Base de données (Docker requis, sauf `db:new` et `db:check-rollbacks`)
 
@@ -57,10 +59,29 @@ Variables d'environnement : voir `.env.example`, à copier vers `.env.local` (ob
 | `pnpm db:test`              | Tests pgTAP de `supabase/tests`                                                                                                   |
 | `pnpm db:rollback-check`    | Base vide → migrations → rollbacks en ordre inverse → migrations ; échoue au premier écart de schéma. Efface les données locales. |
 | `pnpm db:check-rollbacks`   | Vérifie que chaque migration a son rollback (sans Docker, lancé par `pnpm lint`)                                                  |
+| `pnpm db:seed-dev`          | Crée ou remet à zéro les données fictives de développement (refuse toute base non locale, idempotent)                             |
 
-Avant le premier `pnpm test:e2e` : `pnpm exec playwright install chromium`.
+Avant le premier `pnpm test:e2e` : `pnpm exec playwright install chromium`. Arrêter `pnpm dev` avant : Playwright réutilise un serveur déjà lancé sur le port 3000, et `next dev` échoue par intermittence sous requêtes parallèles.
 
-La CI GitHub Actions (`.github/workflows/ci.yml`) exécute à chaque push sur `main` et à chaque pull request : install, lint, typecheck, test, build ; les tests e2e dans un job séparé ; et un job `db` (Supabase local, `db:rollback-check`, `db:test`, types à jour).
+### Comptes de développement
+
+Créés par `pnpm db:seed-dev`, uniquement sur la base locale. Données **fictives** ; mot de passe commun : `Demo-Local-2026!` (sans valeur hors du poste).
+
+| Email                     | Établissements et rôles                                                        | Après connexion                    |
+| ------------------------- | ------------------------------------------------------------------------------ | ---------------------------------- |
+| `direction@exemple.test`  | École Les Orangers (fictive) : direction                                       | Tableau de bord                    |
+| `caisse@exemple.test`     | École Les Orangers : caisse                                                    | Tableau de bord                    |
+| `enseignant@exemple.test` | École Les Orangers : enseignant                                                | Tableau de bord                    |
+| `multi@exemple.test`      | École Les Orangers : enseignant ; Centre de soutien Atlas (fictif) : direction | Choix de l'établissement           |
+| `parent@exemple.test`     | École Les Orangers : parent                                                    | « L'espace parent arrive bientôt » |
+
+L'inscription publique est désactivée : un compte se crée côté serveur (seed, puis invitations en S1-c).
+
+### Emails en local
+
+Supabase local n'envoie aucun email réel : ils sont capturés par Mailpit, sur http://127.0.0.1:54324. Pour tester « Mot de passe oublié » : demander un lien depuis http://127.0.0.1:3000/fr/mot-de-passe-oublie, ouvrir le message dans Mailpit, suivre le lien (valable une fois), puis choisir un mot de passe d'au moins 10 caractères. `pnpm db:seed-dev` remet ensuite le mot de passe du seed.
+
+La CI GitHub Actions (`.github/workflows/ci.yml`) exécute à chaque push sur `main` et à chaque pull request : install, lint, typecheck, test, build ; les tests e2e dans un job séparé (Supabase local, `db:seed-dev`, Playwright) ; et un job `db` (Supabase local, `db:rollback-check`, `db:test`, `test:integration`, types à jour).
 
 ## Structure
 
@@ -104,4 +125,5 @@ Le détail est dans [CLAUDE.md](CLAUDE.md).
 - [0005 : internationalisation](docs/adr/0005-i18n.md)
 - [0006 : base de données locale, migrations réversibles et tests SQL](docs/adr/0006-base-de-donnees.md)
 - [0007 : tenancy, rôles et RLS](docs/adr/0007-tenancy-et-roles.md)
+- [0008 : authentification du personnel et établissement courant](docs/adr/0008-authentification.md)
 - [0006 : base de données locale, migrations réversibles, tests SQL](docs/adr/0006-base-de-donnees.md)
