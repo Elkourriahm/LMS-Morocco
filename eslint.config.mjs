@@ -75,15 +75,19 @@ export default defineConfig([
     },
   },
   // Le client service_role contourne la RLS (ADR 0006) : importable seulement
-  // depuis les tâches système (cron, webhooks, jobs), jamais depuis une page,
-  // un composant ou une Server Action servant un utilisateur.
+  // depuis les tâches système (cron, webhooks, jobs), le seed de
+  // développement et ses tests d'intégration (ADR
+  // 0008), jamais depuis une page, un composant ou une Server Action.
   {
-    files: ['src/**/*.{ts,tsx,mts}'],
+    files: ['src/**/*.{ts,tsx,mts}', 'scripts/**/*.{ts,mts}', 'e2e/**/*.ts'],
     ignores: [
       'src/lib/supabase/admin.ts',
       'src/app/api/cron/**',
       'src/app/api/webhooks/**',
       'src/features/*/jobs/**',
+      'scripts/db-seed-dev.mts',
+      'src/lib/supabase/admin.int.test.ts',
+      'scripts/db-seed-dev.int.test.ts',
     ],
     rules: {
       'no-restricted-imports': [
@@ -91,11 +95,24 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['@/lib/supabase/admin', '**/supabase/admin'],
+              group: [
+                '@/lib/supabase/admin',
+                '**/supabase/admin',
+                '**/supabase/admin.ts',
+              ],
               message:
                 'Client service_role réservé aux tâches système (src/app/api/cron, src/app/api/webhooks, src/features/*/jobs). Utiliser @/lib/supabase/server.',
             },
           ],
+        },
+      ],
+      // no-restricted-imports ne voit pas les import() dynamiques.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression[source.value=/supabase.admin$/]',
+          message:
+            'Client service_role réservé aux tâches système. Utiliser @/lib/supabase/server.',
         },
       ],
     },
