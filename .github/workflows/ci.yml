@@ -50,8 +50,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Valeurs locales par défaut de Supabase (aucun secret réel), requises par src/env.ts.
       - run: cp .env.example .env.local
+      # Auth, PostgREST et Mailpit (emails de réinitialisation, ADR 0008).
+      - run: pnpm exec supabase start -x realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor
+      # Comptes fictifs des tests e2e.
+      - run: pnpm db:seed-dev
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+      - if: always()
+        run: pnpm exec supabase stop --no-backup
 
   db:
     name: Base de données (migrations, rollbacks, pgTAP, types)
@@ -69,6 +75,9 @@ jobs:
       - run: pnpm exec supabase start -x realtime,storage-api,imgproxy,mailpit,studio,edge-runtime,logflare,vector,supavisor
       - run: pnpm db:rollback-check
       - run: pnpm db:test
+      # Tests d'intégration (API admin, trigger d'inscription, seed).
+      - run: cp .env.example .env.local
+      - run: pnpm test:integration
       - name: Types à jour avec les migrations
         run: |
           pnpm db:types
