@@ -6,6 +6,7 @@ const publicVars = {
   APP_ENV: 'test',
   NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'cle-anon-fictive',
+  NEXT_PUBLIC_SITE_URL: 'http://127.0.0.1:3000',
 };
 const serverVars = {
   ...publicVars,
@@ -29,6 +30,15 @@ describe('envSchema (variables publiques)', () => {
       envSchema.parse({
         ...publicVars,
         NEXT_PUBLIC_SUPABASE_URL: 'pas une url',
+      }),
+    ).toThrow();
+  });
+
+  it('rejette une origine du site avec « / » final', () => {
+    expect(() =>
+      envSchema.parse({
+        ...publicVars,
+        NEXT_PUBLIC_SITE_URL: 'http://127.0.0.1:3000/',
       }),
     ).toThrow();
   });
